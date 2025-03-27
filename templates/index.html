@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Научный калькулятор</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #1e3c72, #2a5298);
+            color: white;
+        }
+        .calculator {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            width: 400px;
+        }
+        .display {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1rem;
+            text-align: right;
+            font-size: 2rem;
+            min-height: 60px;
+        }
+        .buttons {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 0.5rem;
+        }
+        button {
+            padding: 1rem;
+            border: none;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        button:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        .operator {
+            background: rgba(255, 165, 0, 0.3);
+        }
+        .function {
+            background: rgba(0, 255, 255, 0.2);
+        }
+        .equals {
+            background: rgba(0, 255, 0, 0.3);
+        }
+        .clear {
+            background: rgba(255, 0, 0, 0.3);
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator">
+        <div class="display" id="display">0</div>
+        <div class="buttons">
+            <button class="clear" onclick="clearDisplay()">C</button>
+            <button class="function" onclick="appendToDisplay('(')">(</button>
+            <button class="function" onclick="appendToDisplay(')')">)</button>
+            <button class="operator" onclick="calculate('power')">^</button>
+            
+            <button class="function" onclick="calculate('sin')">sin</button>
+            <button class="function" onclick="calculate('cos')">cos</button>
+            <button class="function" onclick="calculate('tan')">tan</button>
+            <button class="operator" onclick="appendToDisplay('/')">/</button>
+            
+            <button class="function" onclick="calculate('sqrt')">√</button>
+            <button class="function" onclick="calculate('log')">log</button>
+            <button class="function" onclick="calculate('factorial')">n!</button>
+            <button class="operator" onclick="appendToDisplay('*')">×</button>
+            
+            <button onclick="appendToDisplay('7')">7</button>
+            <button onclick="appendToDisplay('8')">8</button>
+            <button onclick="appendToDisplay('9')">9</button>
+            <button class="operator" onclick="appendToDisplay('-')">-</button>
+            
+            <button onclick="appendToDisplay('4')">4</button>
+            <button onclick="appendToDisplay('5')">5</button>
+            <button onclick="appendToDisplay('6')">6</button>
+            <button class="operator" onclick="appendToDisplay('+')">+</button>
+            
+            <button onclick="appendToDisplay('1')">1</button>
+            <button onclick="appendToDisplay('2')">2</button>
+            <button onclick="appendToDisplay('3')">3</button>
+            <button class="equals" onclick="calculate('add')">=</button>
+            
+            <button onclick="appendToDisplay('0')">0</button>
+            <button onclick="appendToDisplay('.')">.</button>
+            <button class="function" onclick="calculate('bessel')">J₀</button>
+            <button class="operator" onclick="calculate('multiply')">×</button>
+        </div>
+    </div>
+
+    <script>
+        let display = document.getElementById('display');
+        let currentValue = '0';
+        let numbers = [];
+
+        function appendToDisplay(value) {
+            if (currentValue === '0' && value !== '.') {
+                currentValue = value;
+            } else {
+                currentValue += value;
+            }
+            display.textContent = currentValue;
+        }
+
+        function clearDisplay() {
+            currentValue = '0';
+            numbers = [];
+            display.textContent = currentValue;
+        }
+
+        async function calculate(operation) {
+            try {
+                numbers.push(parseFloat(currentValue));
+                const response = await fetch('/calculate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        operation: operation,
+                        numbers: numbers
+                    })
+                });
+                
+                const data = await response.json();
+                if (data.error) {
+                    display.textContent = 'Ошибка';
+                    return;
+                }
+                
+                currentValue = data.result.toString();
+                display.textContent = currentValue;
+                numbers = [];
+            } catch (error) {
+                display.textContent = 'Ошибка';
+            }
+        }
+    </script>
+</body>
+</html> 

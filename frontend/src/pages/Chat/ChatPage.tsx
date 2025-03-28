@@ -27,6 +27,7 @@ import ChatIcon from '@mui/icons-material/Chat';
 import SearchIcon from '@mui/icons-material/Search';
 import AddIcon from '@mui/icons-material/Add';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 interface Message {
     id: number;
@@ -58,6 +59,7 @@ export const ChatPage: React.FC = () => {
     const [newChatName, setNewChatName] = useState('');
     const [createChatError, setCreateChatError] = useState('');
     const [currentUser, setCurrentUser] = useState<{ id: number; username: string } | null>(null);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchChats();
@@ -72,24 +74,52 @@ export const ChatPage: React.FC = () => {
 
     const fetchChats = async () => {
         try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+
             const response = await axios.get('http://localhost:8000/api/v1/chats', {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 },
+                maxRedirects: 0,
+                validateStatus: (status) => status < 400
             });
             setChats(response.data);
-        } catch (err) {
-            console.error('Error fetching chats:', err);
-            setError('Ошибка при загрузке чатов');
+        } catch (error: any) {
+            console.error('Error fetching chats:', error);
+            if (error.response?.status === 307) {
+                // Обработка редиректа вручную
+                const redirectUrl = error.response.headers.location;
+                const redirectResponse = await axios.get(redirectUrl, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                setChats(redirectResponse.data);
+            } else {
+                setError('Ошибка при загрузке чатов');
+            }
         }
     };
 
     const fetchMessages = async (chatId: number) => {
         try {
-            const response = await axios.get(`http://localhost:8000/api/v1/chats/${chatId}/messages`, {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+
+            const response = await axios.get(`http://localhost:8000/api/v1/messages/chat/${chatId}`, {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
-                },
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
             setMessages(response.data);
         } catch (err) {
@@ -100,10 +130,18 @@ export const ChatPage: React.FC = () => {
 
     const fetchCurrentUser = async () => {
         try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+
             const response = await axios.get('http://localhost:8000/api/v1/users/me', {
                 headers: {
-                    Authorization: `Bearer ${localStorage.getItem('token')}`,
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
                 },
+                withCredentials: true
             });
             setCurrentUser(response.data);
         } catch (err) {
@@ -116,16 +154,23 @@ export const ChatPage: React.FC = () => {
         if (!selectedChat || !newMessage.trim()) return;
 
         try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                navigate('/login');
+                return;
+            }
+
             await axios.post(
-                `http://localhost:8000/api/v1/chats/${selectedChat.id}/messages`,
+                'http://localhost:8000/api/v1/messages',
                 {
                     content: newMessage,
                     chat_id: selectedChat.id,
                 },
                 {
                     headers: {
-                        Authorization: `Bearer ${localStorage.getItem('token')}`,
-                    },
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
                 }
             );
 

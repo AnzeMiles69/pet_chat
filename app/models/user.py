@@ -1,6 +1,7 @@
-from sqlalchemy import Column, Integer, String, Boolean, DateTime
-from sqlalchemy.sql import func
+from sqlalchemy import Boolean, Column, Integer, String
+from sqlalchemy.orm import relationship
 from app.db.database import Base
+from app.models.chat import user_chat
 
 class User(Base):
     __tablename__ = "users"
@@ -10,6 +11,8 @@ class User(Base):
     username = Column(String, unique=True, index=True)
     hashed_password = Column(String)
     is_active = Column(Boolean, default=True)
-    role = Column(String, default="USER")  # USER или ADMIN
-    created_at = Column(DateTime(timezone=True), server_default=func.now())
-    updated_at = Column(DateTime(timezone=True), onupdate=func.now()) 
+
+    # Отношения
+    created_chats = relationship("Chat", back_populates="creator", foreign_keys="[Chat.creator_id]")
+    chats = relationship("Chat", secondary=user_chat, back_populates="participants")
+    messages = relationship("Message", back_populates="sender") 
